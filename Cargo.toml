@@ -2,7 +2,13 @@
 name = "xiaomi-ble-mqtt-gateway"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Jan Holthuis <jan.holthuis@ruhr-uni-bochum.de>"]
+description = "MQTT Gateway for Xiamo BLE announcements."
+readme = "README.md"
+repository = "https://github.com/Holzhaus/xiamo-ble-rs"
+license = "MPL-2.0"
+keywords = ["xiaomi", "ble", "mibeacon", "miflora", "mqtt", "gateway"]
+categories = ["command-line-utilities"]
+exclude = [".*"]
 
 [dependencies]
