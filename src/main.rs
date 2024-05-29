@@ -8,6 +8,7 @@
 
 use btleplug::api::{BDAddr, Central, CentralEvent, Manager as _, Peripheral, ScanFilter};
 use btleplug::platform::{Adapter, Manager, PeripheralId};
+use clap::Parser;
 use core::time::Duration;
 use futures::stream::StreamExt;
 use hass_mqtt_discovery::device::Device as HassDevice;
@@ -24,6 +25,18 @@ use tokio::sync::mpsc;
 use xiaomi_ble::device::DeviceType;
 use xiaomi_ble::parse_service_advertisement;
 use xiaomi_ble::sensor::SensorValue;
+
+/// Xiaomi BLE MQTT Gateway.
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Hostname of the MQTT server.
+    #[arg(short = 'H', long, default_value = "localhost")]
+    host: String,
+    /// Port of the MQTT server.
+    #[arg(short, long, default_value_t = 1883)]
+    port: u16,
+}
 
 #[derive(Debug)]
 struct Message {
@@ -59,6 +72,10 @@ async fn get_mac_address(adapter: &Adapter, id: &PeripheralId) -> Result<BDAddr,
 async fn main() -> Result<(), Box<dyn Error>> {
     env::set_var("XIAOMI_BLE_MQTT_GATEWAY_LOG_LEVEL", "info");
     pretty_env_logger::init_custom_env("XIAOMI_BLE_MQTT_GATEWAY_LOG_LEVEL");
+
+    let args = Cli::parse();
+    let mqtt_host = args.host;
+    let mqtt_port = args.port;
 
     let manager = Manager::new().await?;
 
@@ -108,7 +125,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    let mut mqtt_options = MqttOptions::new("xiaomi-ble-mqtt-gateway", "localhost", 1883);
+    let mut mqtt_options = MqttOptions::new("xiaomi-ble-mqtt-gateway", mqtt_host, mqtt_port);
     mqtt_options.set_keep_alive(Duration::from_secs(5));
 
     let (mqtt_client, mut mqtt_eventloop) = AsyncClient::new(mqtt_options, 10);
