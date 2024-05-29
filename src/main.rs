@@ -214,48 +214,97 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         .icon("power")
                         .device_class(HassDeviceClass::None),
                 ),
-                SensorValue::Temperature(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                SensorValue::Temperature(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Temperature")
                         .icon("thermometer")
-                        .device_class(HassDeviceClass::Temperature),
-                ),
-                SensorValue::Humidity(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                        .device_class(HassDeviceClass::Temperature);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
+                SensorValue::Humidity(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Humidity")
                         .icon("cloud-percent")
-                        .device_class(HassDeviceClass::Humidity),
-                ),
-                SensorValue::Illuminance(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                        .device_class(HassDeviceClass::Humidity);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
+                SensorValue::Illuminance(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Illuminance")
                         .icon("brightness-percent")
-                        .device_class(HassDeviceClass::Illuminance),
-                ),
-                SensorValue::Moisture(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                        .device_class(HassDeviceClass::Illuminance);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
+                SensorValue::Moisture(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Moisture")
                         .icon("water-percent")
-                        .device_class(HassDeviceClass::None),
-                ),
-                SensorValue::Conductivity(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                        .device_class(HassDeviceClass::None);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
+                SensorValue::Conductivity(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Conductivity")
                         .icon("nutrition")
-                        .device_class(HassDeviceClass::None),
-                ),
-                SensorValue::FormaldehydeConcentration(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                        .device_class(HassDeviceClass::None);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
+                SensorValue::FormaldehydeConcentration(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Formaldehyde Concentration")
                         .icon("air-purifier")
-                        .device_class(HassDeviceClass::None),
-                ),
-                SensorValue::Consumable(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                        .device_class(HassDeviceClass::None);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
+                SensorValue::Consumable(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Consumable")
                         .icon("percent")
-                        .device_class(HassDeviceClass::None),
-                ),
+                        .device_class(HassDeviceClass::None);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
                 SensorValue::MoistureDetected(_) => HassSensorInfo::BinarySensor(
                     HassBinarySensor::new(sensor_state_topic)
                         .name("Moisture detected")
@@ -268,12 +317,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         .icon("smoke-detector-alert")
                         .device_class(HassDeviceClass::None),
                 ),
-                SensorValue::TimeWithoutMotion(_) => HassSensorInfo::Sensor(
-                    HassSensor::new(sensor_state_topic)
+                SensorValue::TimeWithoutMotion(_) => {
+                    let sensor = HassSensor::new(sensor_state_topic)
                         .name("Time without Motion")
                         .icon("motion-sensor-off")
-                        .device_class(HassDeviceClass::None),
-                ),
+                        .device_class(HassDeviceClass::None);
+                    let sensor =
+                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
+                            sensor.unit_of_measurement(unit_of_measurement.to_string())
+                        } else {
+                            sensor
+                        };
+                    HassSensorInfo::Sensor(sensor)
+                }
             };
 
             let (hass_discovery_topic, hass_sensor) = match hass_sensor {
