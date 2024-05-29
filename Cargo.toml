@@ -12,3 +12,14 @@ categories = ["command-line-utilities"]
 exclude = [".*"]
 
 [dependencies]
+xiaomi-ble = { git = "https://github.com/Holzhaus/xiaomi-ble-rs.git" }
+tokio = { version = "1.37", features = ["macros", "rt", "rt-multi-thread"]}
+btleplug = "0.11"
+futures = "0.3.30"
+pretty_env_logger = "0.5"
+log = "0.4"
+hass-mqtt-discovery = "0.2"
+serde = "1.0"
+serde_json = "1.0"
+nonzero_lit = "0.1"
+rumqttc = "0.24"
