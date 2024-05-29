@@ -18,21 +18,16 @@ use log::{debug, error, info, warn};
 use rumqttc::{AsyncClient, ConnectReturnCode, Incoming, MqttOptions, QoS};
 use serde::{Serialize, Serializer};
 use std::collections::HashMap;
+use std::env;
 use std::error::Error;
 use tokio::sync::mpsc;
 use xiaomi_ble::device::DeviceType;
 use xiaomi_ble::parse_service_advertisement;
 use xiaomi_ble::sensor::SensorValue;
 
-#[derive(Debug, Clone)]
-struct DeviceInfo {
-    pub mac_address: BDAddr,
-    pub local_name: Option<String>,
-}
-
 #[derive(Debug)]
 struct Message {
-    device_info: DeviceInfo,
+    mac_address: BDAddr,
     device_type: Option<&'static DeviceType>,
     event: SensorValue,
 }
@@ -54,19 +49,10 @@ impl Serialize for HassSensorInfo<'_> {
     }
 }
 
-async fn get_device_info(
-    adapter: &Adapter,
-    id: &PeripheralId,
-) -> Result<DeviceInfo, btleplug::Error> {
+async fn get_mac_address(adapter: &Adapter, id: &PeripheralId) -> Result<BDAddr, btleplug::Error> {
     let peripheral = adapter.peripheral(id).await?;
     let mac_address = peripheral.address();
-    let properties = peripheral.properties().await?;
-    let local_name = properties.and_then(|p| p.local_name);
-    let device_info = DeviceInfo {
-        mac_address,
-        local_name,
-    };
-    Ok(device_info)
+    Ok(mac_address)
 }
 
 #[tokio::main]
@@ -94,7 +80,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // contained sensor values.
         while let Some(ble_event) = ble_events.next().await {
             if let CentralEvent::ServiceDataAdvertisement { id, service_data } = &ble_event {
-                let device_info = match get_device_info(&central, id).await {
+                let mac_address = match get_mac_address(&central, id).await {
                     Ok(value) => value,
                     Err(_) => continue,
                 };
@@ -106,9 +92,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     let device_type = service_advertisement.device_type();
 
                     for event in service_advertisement.iter_sensor_values() {
-                        let device_info = device_info.clone();
+                        let mac_address = mac_address.clone();
                         let message = Message {
-                            device_info,
+                            mac_address,
                             device_type,
                             event,
                         };
@@ -155,7 +141,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut known_devices = HashMap::new();
     let mut known_sensors = HashMap::new();
     while let Some(message) = rx.recv().await {
-        let mac_addr = message.device_info.mac_address.to_string_no_delim();
+        let mac_addr = message.mac_address.to_string_no_delim();
         let device_unique_id = format!("xiaomi_ble_{mac_addr}");
         if !known_devices.contains_key(&device_unique_id) {
             let hass_device = HassDevice {
