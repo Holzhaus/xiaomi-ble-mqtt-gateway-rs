@@ -57,7 +57,8 @@ async fn get_mac_address(adapter: &Adapter, id: &PeripheralId) -> Result<BDAddr,
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    pretty_env_logger::init();
+    env::set_var("XIAOMI_BLE_MQTT_GATEWAY_LOG_LEVEL", "info");
+    pretty_env_logger::init_custom_env("XIAOMI_BLE_MQTT_GATEWAY_LOG_LEVEL");
 
     let manager = Manager::new().await?;
 
