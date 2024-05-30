@@ -345,13 +345,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
+            let expire_after = nonzero_lit::u32!(5 * 60); // 5 minutes
             let (hass_discovery_topic, hass_sensor) = match hass_sensor {
                 HassSensorInfo::BinarySensor(sensor) => (
                     format!("homeassistant/binary_sensor/{sensor_unique_id}/config"),
                     HassSensorInfo::BinarySensor(
                         sensor
                             .unique_id(sensor_unique_id.clone())
-                            .expire_after(nonzero_lit::u32!(60))
+                            .object_id(sensor_unique_id.clone())
+                            .expire_after(expire_after)
                             .device(
                                 known_devices
                                     .get(&device_unique_id)
@@ -365,7 +367,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     HassSensorInfo::Sensor(
                         sensor
                             .unique_id(sensor_unique_id.clone())
-                            .expire_after(nonzero_lit::u32!(60))
+                            .object_id(sensor_unique_id.clone())
+                            .expire_after(expire_after)
                             .device(
                                 known_devices
                                     .get(&device_unique_id)
