@@ -34,8 +34,14 @@ struct Cli {
     #[arg(short = 'H', long, default_value = "localhost")]
     host: String,
     /// Port of the MQTT server.
-    #[arg(short, long, default_value_t = 1883)]
+    #[arg(short = 'P', long, default_value_t = 1883)]
     port: u16,
+    /// Username for the MQTT server.
+    #[arg(short, long, requires = "password")]
+    username: Option<String>,
+    /// Password for the MQTT server.
+    #[arg(short, long, requires = "username")]
+    password: Option<String>,
 }
 
 #[derive(Debug)]
@@ -76,6 +82,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
     let mqtt_host = args.host;
     let mqtt_port = args.port;
+    let mqtt_credentials = args.username.and_then(|username| {
+        args.password
+            .and_then(|password| Some((username, password)))
+    });
 
     let manager = Manager::new().await?;
 
@@ -127,6 +137,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut mqtt_options = MqttOptions::new("xiaomi-ble-mqtt-gateway", mqtt_host, mqtt_port);
     mqtt_options.set_keep_alive(Duration::from_secs(5));
+    if let Some((mqtt_username, mqtt_password)) = mqtt_credentials {
+        mqtt_options.set_credentials(mqtt_username, mqtt_password);
+    }
 
     let (mqtt_client, mut mqtt_eventloop) = AsyncClient::new(mqtt_options, 10);
 
