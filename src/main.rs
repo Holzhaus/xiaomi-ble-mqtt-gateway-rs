@@ -15,7 +15,7 @@ use hass_mqtt_discovery::device::Device as HassDevice;
 use hass_mqtt_discovery::device_class::DeviceClass as HassDeviceClass;
 use hass_mqtt_discovery::entity::BinarySensor as HassBinarySensor;
 use hass_mqtt_discovery::entity::Sensor as HassSensor;
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use rumqttc::{AsyncClient, ConnectReturnCode, Incoming, MqttOptions, QoS};
 use serde::{Serialize, Serializer};
 use std::collections::HashMap;
@@ -388,7 +388,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             known_sensors.insert(sensor_unique_id, hass_sensor);
         }
 
-        debug!("Publishing sensor value {sensor_state_topic}: {sensor_state}");
+        info!("Publishing {sensor_state_topic}: {sensor_state}");
         mqtt_client
             .publish(sensor_state_topic, QoS::AtLeastOnce, false, sensor_state)
             .await?;
