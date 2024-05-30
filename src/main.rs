@@ -224,13 +224,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::Power(_) => HassSensorInfo::BinarySensor(
                     HassBinarySensor::new(sensor_state_topic)
                         .name("Power")
-                        .icon("power")
+                        .icon("mdi:power")
                         .device_class(HassDeviceClass::None),
                 ),
                 SensorValue::Temperature(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Temperature")
-                        .icon("thermometer")
+                        .icon("mdi:thermometer")
                         .device_class(HassDeviceClass::Temperature);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -243,7 +243,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::Humidity(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Humidity")
-                        .icon("cloud-percent")
+                        .icon("mdi:cloud-percent")
                         .device_class(HassDeviceClass::Humidity);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -256,7 +256,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::Illuminance(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Illuminance")
-                        .icon("brightness-percent")
+                        .icon("mdi:brightness-percent")
                         .device_class(HassDeviceClass::Illuminance);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -269,7 +269,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::Moisture(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Moisture")
-                        .icon("water-percent")
+                        .icon("mdi:water-percent")
                         .device_class(HassDeviceClass::None);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -282,7 +282,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::Conductivity(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Conductivity")
-                        .icon("nutrition")
+                        .icon("mdi:nutrition")
                         .device_class(HassDeviceClass::None);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -295,7 +295,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::FormaldehydeConcentration(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Formaldehyde Concentration")
-                        .icon("air-purifier")
+                        .icon("mdi:air-purifier")
                         .device_class(HassDeviceClass::None);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -308,7 +308,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::Consumable(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Consumable")
-                        .icon("percent")
+                        .icon("mdi:percent")
                         .device_class(HassDeviceClass::None);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
@@ -321,19 +321,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 SensorValue::MoistureDetected(_) => HassSensorInfo::BinarySensor(
                     HassBinarySensor::new(sensor_state_topic)
                         .name("Moisture detected")
-                        .icon("water-alert")
+                        .icon("mdi:water-alert")
                         .device_class(HassDeviceClass::None),
                 ),
                 SensorValue::SmokeDetected(_) => HassSensorInfo::BinarySensor(
                     HassBinarySensor::new(sensor_state_topic)
                         .name("Smoke detected")
-                        .icon("smoke-detector-alert")
+                        .icon("mdi:smoke-detector-alert")
                         .device_class(HassDeviceClass::None),
                 ),
                 SensorValue::TimeWithoutMotion(_) => {
                     let sensor = HassSensor::new(sensor_state_topic)
                         .name("Time without Motion")
-                        .icon("motion-sensor-off")
+                        .icon("mdi:motion-sensor-off")
                         .device_class(HassDeviceClass::None);
                     let sensor =
                         if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
