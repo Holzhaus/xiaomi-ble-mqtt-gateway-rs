@@ -24,7 +24,7 @@ use std::error::Error;
 use tokio::sync::mpsc;
 use xiaomi_ble::device::DeviceType;
 use xiaomi_ble::parse_service_advertisement;
-use xiaomi_ble::sensor::SensorValue;
+use xiaomi_ble::sensor::{BinaryMeasurementType, NumericMeasurementType, SensorEvent};
 
 /// Xiaomi BLE MQTT Gateway.
 #[derive(Parser, Debug)]
@@ -48,7 +48,7 @@ struct Cli {
 struct Message {
     mac_address: BDAddr,
     device_type: Option<&'static DeviceType>,
-    event: SensorValue,
+    event: SensorEvent,
 }
 
 enum HassSensorInfo<'a> {
@@ -119,7 +119,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 {
                     let device_type = service_advertisement.device_type();
 
-                    for event in service_advertisement.iter_sensor_values() {
+                    for event in service_advertisement.iter_sensor_events() {
                         let mac_address = mac_address.clone();
                         let message = Message {
                             mac_address,
@@ -195,188 +195,121 @@ async fn main() -> Result<(), Box<dyn Error>> {
             known_devices.insert(device_unique_id.clone(), hass_device);
         }
         let (sensor_id, sensor_state) = match message.event {
-            SensorValue::Power(value) => ("power", if value { "on" } else { "off" }.to_string()),
-            SensorValue::Temperature(value) => ("temperature", format!("{}", value)),
-            SensorValue::Humidity(value) => ("humidity", format!("{}", value)),
-            SensorValue::Illuminance(value) => ("illuminance", format!("{}", value)),
-            SensorValue::Moisture(value) => ("moisture", format!("{}", value)),
-            SensorValue::Conductivity(value) => ("conductivity", format!("{}", value)),
-            SensorValue::FormaldehydeConcentration(value) => {
-                ("formaldehyde_concentration", format!("{}", value))
-            }
-            SensorValue::Consumable(value) => ("consumable", format!("{}", value)),
-            SensorValue::MoistureDetected(value) => (
-                "moisture_detected",
+            SensorEvent::BinaryMeasurement {
+                measurement_type,
+                value,
+            } => (
+                measurement_type.as_str(),
                 if value { "on" } else { "off" }.to_string(),
             ),
-            SensorValue::SmokeDetected(value) => (
-                "smoke_detected",
-                if value { "on" } else { "off" }.to_string(),
-            ),
-            SensorValue::TimeWithoutMotion(value) => ("time_without_motion", format!("{}", value)),
+            SensorEvent::NumericMeasurement {
+                measurement_type,
+                value,
+                unit: _,
+            } => (measurement_type.as_str(), value.to_string()),
         };
 
         let sensor_unique_id = format!("xiaomi_ble_{mac_addr}_{sensor_id}");
         let sensor_state_topic = format!("xiaomi_ble_{mac_addr}/{sensor_id}");
         if !known_sensors.contains_key(&sensor_unique_id) {
+            let expire_after = nonzero_lit::u32!(60 * 60); // 60 minutes
             let sensor_state_topic = sensor_state_topic.clone();
-            let hass_sensor = match message.event {
-                SensorValue::Power(_) => HassSensorInfo::BinarySensor(
-                    HassBinarySensor::new(sensor_state_topic)
-                        .name("Power")
-                        .icon("mdi:power")
-                        .device_class(HassDeviceClass::None),
-                ),
-                SensorValue::Temperature(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Temperature")
-                        .icon("mdi:thermometer")
-                        .device_class(HassDeviceClass::Temperature);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::Humidity(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Humidity")
-                        .icon("mdi:cloud-percent")
-                        .device_class(HassDeviceClass::Humidity);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::Illuminance(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Illuminance")
-                        .icon("mdi:brightness-percent")
-                        .device_class(HassDeviceClass::Illuminance);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::Moisture(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Moisture")
-                        .icon("mdi:water-percent")
-                        .device_class(HassDeviceClass::None);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::Conductivity(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Conductivity")
-                        .icon("mdi:nutrition")
-                        .device_class(HassDeviceClass::None);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::FormaldehydeConcentration(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Formaldehyde Concentration")
-                        .icon("mdi:air-purifier")
-                        .device_class(HassDeviceClass::None);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::Consumable(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Consumable")
-                        .icon("mdi:percent")
-                        .device_class(HassDeviceClass::None);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-                SensorValue::MoistureDetected(_) => HassSensorInfo::BinarySensor(
-                    HassBinarySensor::new(sensor_state_topic)
-                        .name("Moisture detected")
-                        .icon("mdi:water-alert")
-                        .device_class(HassDeviceClass::None),
-                ),
-                SensorValue::SmokeDetected(_) => HassSensorInfo::BinarySensor(
-                    HassBinarySensor::new(sensor_state_topic)
-                        .name("Smoke detected")
-                        .icon("mdi:smoke-detector-alert")
-                        .device_class(HassDeviceClass::None),
-                ),
-                SensorValue::TimeWithoutMotion(_) => {
-                    let sensor = HassSensor::new(sensor_state_topic)
-                        .name("Time without Motion")
-                        .icon("mdi:motion-sensor-off")
-                        .device_class(HassDeviceClass::None);
-                    let sensor =
-                        if let Some(unit_of_measurement) = message.event.unit_of_measurement() {
-                            sensor.unit_of_measurement(unit_of_measurement.to_string())
-                        } else {
-                            sensor
-                        };
-                    HassSensorInfo::Sensor(sensor)
-                }
-            };
+            let (hass_discovery_topic, hass_sensor) = match message.event {
+                SensorEvent::BinaryMeasurement {
+                    measurement_type,
+                    value: _,
+                } => {
+                    let (name, icon) = match measurement_type {
+                        BinaryMeasurementType::Power => ("Power", "mdi:power"),
+                        BinaryMeasurementType::Sleep => ("Sleep", "mdi:sleep"),
+                        BinaryMeasurementType::Binding => ("Binding", "mdi:handshake"),
+                        BinaryMeasurementType::Switch => ("Switch", "mdi:light-switch"),
+                        BinaryMeasurementType::WaterImmersion => {
+                            ("Water Immersion", "mdi:water-alert")
+                        }
+                        BinaryMeasurementType::GasLeak => ("Gas Leak", "mdi:cloud-alert"),
+                        BinaryMeasurementType::Light => ("Light", "mdi:lightbulb-on"),
+                    };
 
-            let expire_after = nonzero_lit::u32!(5 * 60); // 5 minutes
-            let (hass_discovery_topic, hass_sensor) = match hass_sensor {
-                HassSensorInfo::BinarySensor(sensor) => (
-                    format!("homeassistant/binary_sensor/{sensor_unique_id}/config"),
-                    HassSensorInfo::BinarySensor(
-                        sensor
-                            .unique_id(sensor_unique_id.clone())
-                            .object_id(sensor_unique_id.clone())
-                            .expire_after(expire_after)
-                            .device(
-                                known_devices
-                                    .get(&device_unique_id)
-                                    .map(HassDevice::clone)
-                                    .unwrap(),
-                            ),
-                    ),
-                ),
-                HassSensorInfo::Sensor(sensor) => (
-                    format!("homeassistant/sensor/{sensor_unique_id}/config"),
-                    HassSensorInfo::Sensor(
-                        sensor
-                            .unique_id(sensor_unique_id.clone())
-                            .object_id(sensor_unique_id.clone())
-                            .expire_after(expire_after)
-                            .device(
-                                known_devices
-                                    .get(&device_unique_id)
-                                    .map(HassDevice::clone)
-                                    .unwrap(),
-                            ),
-                    ),
-                ),
+                    let sensor = HassBinarySensor::new(sensor_state_topic)
+                        .name(name)
+                        .icon(icon)
+                        .unique_id(sensor_unique_id.clone())
+                        .object_id(sensor_unique_id.clone())
+                        .expire_after(expire_after)
+                        .device(
+                            known_devices
+                                .get(&device_unique_id)
+                                .map(HassDevice::clone)
+                                .unwrap(),
+                        );
+                    (
+                        format!("homeassistant/binary_sensor/{sensor_unique_id}/config"),
+                        HassSensorInfo::BinarySensor(sensor),
+                    )
+                }
+                SensorEvent::NumericMeasurement {
+                    measurement_type,
+                    value: _,
+                    unit,
+                } => {
+                    let (name, icon, device_class) = match measurement_type {
+                        NumericMeasurementType::Temperature => (
+                            "Temperature",
+                            "mdi:thermometer",
+                            HassDeviceClass::Temperature,
+                        ),
+                        NumericMeasurementType::Humidity => {
+                            ("Humidity", "mdi:cloud-percent", HassDeviceClass::Humidity)
+                        }
+                        NumericMeasurementType::Illuminance => (
+                            "Illuminance",
+                            "mdi:brightness-percent",
+                            HassDeviceClass::Illuminance,
+                        ),
+                        NumericMeasurementType::Moisture => {
+                            ("Moisture", "mdi:water-percent", HassDeviceClass::None)
+                        }
+                        NumericMeasurementType::Conductivity => {
+                            ("Conductivity", "mdi:nutrition", HassDeviceClass::None)
+                        }
+                        NumericMeasurementType::FormaldehydeConcentration => (
+                            "Formaldehyde Concentration",
+                            "mdi:air-purifier",
+                            HassDeviceClass::None,
+                        ),
+                        NumericMeasurementType::RemainingSupplies => {
+                            ("Remaining Supplies", "mdi:percent", HassDeviceClass::None)
+                        }
+                        NumericMeasurementType::BatteryPower => {
+                            ("Battery Power", "mdi:battery", HassDeviceClass::None)
+                        }
+                        NumericMeasurementType::Weight => {
+                            ("Weight", "mdi:scale", HassDeviceClass::None)
+                        }
+                        NumericMeasurementType::Impedance => {
+                            ("Impedance", "mdi:omega", HassDeviceClass::None)
+                        }
+                    };
+                    let sensor = HassSensor::new(sensor_state_topic)
+                        .name(name)
+                        .icon(icon)
+                        .device_class(device_class)
+                        .unit_of_measurement(unit.as_str())
+                        .unique_id(sensor_unique_id.clone())
+                        .object_id(sensor_unique_id.clone())
+                        .expire_after(expire_after)
+                        .device(
+                            known_devices
+                                .get(&device_unique_id)
+                                .map(HassDevice::clone)
+                                .unwrap(),
+                        );
+                    (
+                        format!("homeassistant/sensor/{sensor_unique_id}/config"),
+                        HassSensorInfo::Sensor(sensor),
+                    )
+                }
             };
 
             info!("New sensor: {sensor_unique_id}");
