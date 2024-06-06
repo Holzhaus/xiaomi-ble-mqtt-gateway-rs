@@ -10,7 +10,7 @@ use btleplug::api::{BDAddr, Central, CentralEvent, Manager as _, Peripheral, Sca
 use btleplug::platform::{Adapter, Manager, PeripheralId};
 use clap::Parser;
 use core::time::Duration;
-use futures::stream::StreamExt;
+use futures::StreamExt;
 use hass_mqtt_discovery::device::Device as HassDevice;
 use hass_mqtt_discovery::device_class::DeviceClass as HassDeviceClass;
 use hass_mqtt_discovery::entity::BinarySensor as HassBinarySensor;
@@ -42,6 +42,9 @@ struct Cli {
     /// Password for the MQTT server.
     #[arg(short, long, requires = "username")]
     password: Option<String>,
+    /// Bluetooth Adapter Name.
+    #[arg(short = 'a', long)]
+    bt_adapter: Option<String>,
 }
 
 #[derive(Debug)]
@@ -90,8 +93,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let manager = Manager::new().await?;
 
     // Get the first bluetooth adapter and connect to it.
-    let adapters = manager.adapters().await?;
-    let central = adapters.into_iter().next().unwrap();
+    let mut adapters = manager.adapters().await?.into_iter();
+    let central = if let Some(bt_adapter_name) = args.bt_adapter {
+        loop {
+            if let Some(adapter) = adapters.next() {
+                if adapter
+                    .adapter_info()
+                    .await
+                    .is_ok_and(|info| info.contains(&bt_adapter_name))
+                {
+                    break Some(adapter);
+                }
+            } else {
+                break None;
+            }
+        }
+    } else {
+        adapters.next()
+    }
+    .expect("Bluetooth adapter not found!");
+
+    if let Ok(adapter_info) = central.adapter_info().await {
+        info!("Adapter: {adapter_info}");
+    }
 
     // Each adapter has an event stream, we fetch via events(),
     // simplifying the type, this will return what is essentially a
